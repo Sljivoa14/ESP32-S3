@@ -3,7 +3,7 @@
  
 # ESP32-S3 + OV3660 Camera Server
 
-A from-scratch PlatformIO/Arduino project turning a Freenove ESP32-S3-N16R8 board (16 MB flash, 8 MB PSRAM) with an OV3660 camera into a Wi-Fi-connected HTTP camera server, viewable from a browser.
+A from-scratch PlatformIO(VS code extension)/Arduino project turning a Freenove ESP32-S3-N16R8 board (16 MB flash, 8 MB PSRAM) with an OV3660 camera into a Wi-Fi-connected HTTP camera server, viewable from a browser.
 
 ## Hardware
 
