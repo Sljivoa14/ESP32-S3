@@ -7,8 +7,8 @@
 // WIFI
 // ========================================
 
-const char* SSID = "ur wifi";
-const char* PASSWORD = "ur passsord";
+const char* SSID = "your wifi";
+const char* PASSWORD = "your passsord";
 
 WebServer server(80);
 
@@ -442,7 +442,6 @@ void setup() {
         return;
     }
 
-
     // ========================================
     // WIFI SUCCESS
     // ========================================
@@ -498,7 +497,7 @@ void setup() {
     Serial.println("       HTTP SERVER STARTED");
     Serial.println("================================");
 
-    Serial.print("OPEN: http://");
+    Serial.print("OPEN: http://");        // server port HTTP
     Serial.println(WiFi.localIP());
 
     Serial.println();
