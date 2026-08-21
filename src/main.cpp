@@ -7,8 +7,8 @@
 // WIFI
 // ========================================
 
-const char* SSID = "ur wifi";
-const char* PASSWORD = "ur passsord";
+const char* SSID = "iPhone";
+const char* PASSWORD = "seksi111";
 
 WebServer server(80);
 
