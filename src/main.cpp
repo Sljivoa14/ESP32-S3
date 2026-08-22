@@ -7,8 +7,8 @@
 // WIFI
 // ========================================
 
-const char* SSID = "iPhone";
-const char* PASSWORD = "seksi111";
+const char* SSID = "WIFI";
+const char* PASSWORD = "PASWORD";
 
 WebServer server(80);
 
@@ -356,6 +356,29 @@ function capture() {
 // SETUP
 // ========================================
 
+void WiFiEvent(WiFiEvent_t event, WiFiEventInfo_t info) {
+    switch(event){
+        case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
+            Serial.printf(
+                "WiFi disconected. Reason: %d\n",
+                info.wifi_sta_disconnected.reason
+            );
+            break;
+
+        case ARDUINO_EVENT_WIFI_STA_CONNECTED:
+            Serial.println("WiFi associoated with router!!!");
+            break;
+
+        case ARDUINO_EVENT_WIFI_STA_GOT_IP:
+            Serial.print("Got IP: ");
+            Serial.println(WiFi.localIP());
+            break;
+
+        default:
+            break;  
+    }
+}
+
 void setup() {
 
     Serial.begin(115200);
@@ -401,10 +424,14 @@ void setup() {
 
     WiFi.mode(WIFI_STA);
 
+    WiFi.onEvent(WiFiEvent);
+
     WiFi.begin(
         SSID,
         PASSWORD
     );
+
+    WiFi.setSleep(false);
 
     int attempts = 0;
 
