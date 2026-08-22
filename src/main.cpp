@@ -469,7 +469,6 @@ void setup() {
         return;
     }
 
-
     // ========================================
     // WIFI SUCCESS
     // ========================================
@@ -525,7 +524,7 @@ void setup() {
     Serial.println("       HTTP SERVER STARTED");
     Serial.println("================================");
 
-    Serial.print("OPEN: http://");
+    Serial.print("OPEN: http://");        // server port HTTP
     Serial.println(WiFi.localIP());
 
     Serial.println();
