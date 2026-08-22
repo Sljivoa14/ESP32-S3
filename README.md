@@ -150,3 +150,518 @@ monitor_speed = 115200
 - **Monitor** → opens serial monitor at 115200 baud
 
 Normal day-to-day workflow: edit → `Ctrl+S` → Upload → Monitor. No need to Clean every time.
+
+# ESP32-S3-N16R8 + OV3660 Edge AI Face Recognition
+
+## Project Goal
+
+Build an ESP32-S3-N16R8 camera system using the OV3660 that:
+
+1. Connects to a normal Wi-Fi router.
+2. Serves a web interface over HTTP.
+3. Captures images from the OV3660.
+4. Streams the camera over the local network.
+5. Runs face detection locally on the ESP32.
+6. Eventually performs face recognition locally as Edge AI.
+7. Displays the camera and AI results through a browser.
+
+The long-term objective is to keep the AI inference on the ESP32 rather than sending camera images to a cloud service.
+
+---
+
+# Hardware
+
+- ESP32-S3-N16R8
+  - 16 MB Flash
+  - 8 MB PSRAM
+- Freenove ESP32-WROVER CAM
+- OV3660 camera
+- USB connection to PC
+- Wi-Fi router
+
+The 8 MB PSRAM has already been confirmed working.
+
+---
+
+# Current Development Environment
+
+- VS Code
+- PlatformIO
+- Arduino framework
+- ESP32-S3
+- PlatformIO environment:
+
+```ini
+[env:esp32-s3-devkitc-1]
+platform = espressif32
+board = esp32-s3-devkitc-1
+framework = arduino
+monitor_speed = 115200
+```
+
+---
+
+# Current Status
+
+## Completed
+
+- [x] VS Code installed
+- [x] PlatformIO installed
+- [x] ESP32-S3 project created
+- [x] ESP32-S3 successfully compiled
+- [x] ESP32-S3 successfully uploaded
+- [x] Serial monitor working at 115200
+- [x] ESP32-S3-N16R8 hardware identified
+- [x] 8 MB PSRAM confirmed
+- [x] OV3660 detected
+- [x] Camera initialization succeeded
+- [x] Phone hotspot successfully connected to ESP32
+- [x] ESP32 HTTP server successfully starts
+- [x] ESP32 receives an IP address
+
+## Current Blocker
+
+The ESP32 connects successfully to the phone hotspot but fails to associate with the normal Wi-Fi router.
+
+Current router-side Wi-Fi test:
+
+```text
+2.4 GHz
+802.11n / Wi-Fi 4
+WPA2-Personal
+```
+
+The ESP32 currently reports:
+
+```text
+WiFi disconnected. Reason: 202
+Final status: 4
+```
+
+This indicates an association failure.
+
+Do not modify the camera code while troubleshooting this. The network problem must be solved first.
+
+---
+
+# PHASE 1 — Wi-Fi Networking
+
+## Step 1 — Connect ESP32 to the normal router
+
+Update the local Wi-Fi credentials:
+
+```cpp
+const char* SSID = "YOUR_WIFI_NAME";
+const char* PASSWORD = "YOUR_WIFI_PASSWORD";
+```
+
+Never publish the real password.
+
+The ESP32 should eventually print:
+
+```text
+WIFI CONNECTED!
+IP address: 192.168.1.xxx
+```
+
+## Step 2 — Confirm the PC and ESP32 are on the same LAN
+
+Example:
+
+```text
+Router
+├── PC     192.168.1.x
+└── ESP32  192.168.1.x
+```
+
+## Step 3 — Ping the ESP32
+
+From Windows CMD:
+
+```cmd
+ping ESP32_IP
+```
+
+Expected:
+
+```text
+Reply from ESP32_IP
+```
+
+## Step 4 — Open the HTTP server
+
+In a browser:
+
+```text
+http://ESP32_IP
+```
+
+The ESP32 camera page should appear.
+
+---
+
+# PHASE 2 — OV3660 Camera Capture
+
+Once HTTP networking works, test the camera.
+
+The capture endpoint should be:
+
+```text
+/capture
+```
+
+The browser should show:
+
+```text
+ESP32-S3 OV3660
+
+[ camera image ]
+
+[ CAPTURE ]
+```
+
+Clicking CAPTURE should produce serial output similar to:
+
+```text
+Capturing RGB565 frame...
+RGB565 FRAME: 160x120 | XXXXX bytes
+JPEG CREATED: XXXXX bytes
+JPEG SENT!
+```
+
+If capture fails, debug the camera before adding AI.
+
+---
+
+# PHASE 3 — Reliable Camera Pipeline
+
+The target pipeline is:
+
+```text
+OV3660
+  ↓
+Camera frame
+  ↓
+PSRAM frame buffer
+  ↓
+RGB565 / JPEG
+  ↓
+HTTP
+  ↓
+Browser
+```
+
+Test and optimize:
+
+- QQVGA
+- QVGA
+- RGB565
+- JPEG
+- PSRAM frame buffers
+- Frame buffer count
+- JPEG quality
+- Frame rate
+- Free heap
+- Free PSRAM
+
+Do not increase resolution until lower-resolution capture is reliable.
+
+---
+
+# PHASE 4 — Live Camera Streaming
+
+Replace the single-image CAPTURE workflow with a live local stream.
+
+Target architecture:
+
+```text
+OV3660
+   ↓
+JPEG frames
+   ↓
+HTTP/MJPEG stream
+   ↓
+Browser
+```
+
+The browser should continuously display the camera instead of requiring a CAPTURE button.
+
+---
+
+# PHASE 5 — Edge AI Face Detection
+
+Only after the camera is reliable should AI be added.
+
+The first AI milestone is **face detection**, not recognition.
+
+Target:
+
+```text
+Camera
+  ↓
+Frame
+  ↓
+Resize / preprocessing
+  ↓
+AI model
+  ↓
+Face detection
+  ↓
+YES / NO
+```
+
+Example result:
+
+```text
+Face detected: YES
+Confidence: 92%
+```
+
+Start with low-resolution input because embedded AI has limited CPU and memory resources.
+
+---
+
+# PHASE 6 — Face Recognition
+
+Face detection and face recognition are different.
+
+## Detection
+
+Answers:
+
+> Is there a face in this image?
+
+```text
+Camera
+  ↓
+Face detector
+  ↓
+Face found
+```
+
+## Recognition
+
+Answers:
+
+> Which enrolled person does this face most closely match?
+
+```text
+Camera
+  ↓
+Face detection
+  ↓
+Face crop
+  ↓
+Preprocessing
+  ↓
+Face feature / embedding model
+  ↓
+Compare with enrolled identities
+  ↓
+Identity + similarity/confidence
+```
+
+The recognition system must be designed carefully to avoid confusing similar faces.
+
+---
+
+# PHASE 7 — Edge AI Optimization
+
+Once inference works, optimize:
+
+- Model size
+- Input resolution
+- Quantization
+- Inference latency
+- RAM usage
+- PSRAM usage
+- CPU usage
+- Frame rate
+- False positives
+- False negatives
+- Power consumption
+
+The 8 MB PSRAM is especially useful for camera buffers and ML workloads.
+
+---
+
+# Final Target Architecture
+
+```text
+                 ESP32-S3-N16R8
+              ┌───────────────────┐
+              │                   │
+              │      OV3660       │
+              │         ↓         │
+              │   Image Capture   │
+              │         ↓         │
+              │  Preprocessing    │
+              │         ↓         │
+              │   Face Detection  │
+              │         ↓         │
+              │ Face Recognition  │
+              │         ↓         │
+              │      Result       │
+              │                   │
+              └─────────┬─────────┘
+                        │
+                       Wi-Fi
+                        │
+              ┌─────────▼─────────┐
+              │   Web Interface   │
+              │                   │
+              │ Camera + Results  │
+              └───────────────────┘
+```
+
+---
+
+# Recommended Software Architecture
+
+Keep the ESP32 project primarily in C++.
+
+Example:
+
+```text
+ESP32-Edge-AI/
+│
+├── platformio.ini
+│
+├── src/
+│   ├── main.cpp
+│   ├── camera.cpp
+│   ├── camera.h
+│   ├── wifi.cpp
+│   ├── wifi.h
+│   ├── web_server.cpp
+│   ├── web_server.h
+│   ├── ai.cpp
+│   └── ai.h
+│
+├── include/
+│
+├── lib/
+│
+└── README.md
+```
+
+Do not create a Python AI file just because we are adding AI.
+
+For true **on-device Edge AI**, the inference code should run on the ESP32. That means C/C++ and an embedded ML runtime/model are the main path.
+
+Python can still be useful on the PC for:
+
+- Preparing/training a model
+- Converting a trained model
+- Creating a dataset
+- Testing recognition algorithms
+- Evaluating accuracy
+- Generating embeddings if we choose a PC-assisted architecture
+
+But the final ESP32 inference path should be independent of Python if the goal is fully local Edge AI.
+
+---
+
+# Python vs ESP32 AI
+
+## Fully on-device Edge AI
+
+```text
+OV3660
+  ↓
+ESP32
+  ↓
+ML inference
+  ↓
+Recognition
+```
+
+No Python runtime is required on the ESP32.
+
+## PC-assisted AI
+
+```text
+OV3660
+  ↓
+ESP32
+  ↓
+Wi-Fi
+  ↓
+Python program on PC
+  ↓
+AI inference
+  ↓
+Result
+```
+
+This is easier initially but is not fully Edge AI.
+
+For this project, prefer the first architecture once the basic camera system works.
+
+---
+
+# Suggested Development Order
+
+Do not skip stages.
+
+```text
+1. Wi-Fi connection
+       ↓
+2. ESP32 IP address
+       ↓
+3. PC can ping ESP32
+       ↓
+4. HTTP server reachable
+       ↓
+5. OV3660 capture
+       ↓
+6. JPEG capture
+       ↓
+7. Live camera stream
+       ↓
+8. Face detection
+       ↓
+9. Face recognition
+       ↓
+10. Edge AI optimization
+```
+
+This layered approach makes debugging much easier because each subsystem is validated before the next one is introduced.
+
+---
+
+# Cybersecurity / Engineering Notes
+
+The project naturally touches several useful cybersecurity concepts:
+
+- Wi-Fi authentication
+- IP addressing
+- TCP/IP
+- HTTP
+- Local network security
+- Device discovery
+- Embedded attack surfaces
+- Secure firmware
+- Input validation
+- Authentication for the web interface
+- Protecting camera data
+- Model/data privacy
+- Edge processing versus cloud processing
+
+A future version should not leave the camera HTTP endpoint openly accessible to every device on the LAN. Once the prototype works, add appropriate authentication and access controls.
+
+---
+
+# Immediate Next Step
+
+When the normal router is available again:
+
+1. Fix ESP32 association with the router.
+2. Confirm `WIFI CONNECTED`.
+3. Get the ESP32's `192.168.1.x` IP.
+4. Ping it from the PC.
+5. Open the HTTP server.
+6. Test OV3660 capture.
+7. Only then begin the live stream.
+8. Then integrate face detection.
+9. Finally build face recognition and optimize the model for the ESP32-S3.
